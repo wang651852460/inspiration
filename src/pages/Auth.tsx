@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LogIn, UserPlus, LogOut, User, AlertCircle } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -10,18 +10,28 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function Auth() {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup' | 'email-confirmed'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
   
   const { user, isLoading, error: authError, signIn, signUp, signOut } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const confirmed = searchParams.get('confirmed');
+    if (confirmed === 'true') {
+      setSuccessMessage('邮箱确认成功！请登录你的账号。');
+    }
+  }, [searchParams]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
+    setSuccessMessage(null);
 
     if (mode === 'signup') {
       if (password !== confirmPassword) {
@@ -39,8 +49,9 @@ export default function Auth() {
         await signIn(email, password);
       } else {
         await signUp(email, password);
+        setSuccessMessage('注册成功！请查看邮箱并点击确认链接来完成注册。');
+        setMode('email-confirmed');
       }
-      navigate('/');
     } catch (err: any) {
       setLocalError(err.message || '操作失败');
     }
@@ -66,6 +77,51 @@ export default function Auth() {
             <LogOut size={20} />
             {isLoading ? '退出中...' : '退出登录'}
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === 'email-confirmed') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
+              <User size={40} className="text-green-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">注册成功！</h2>
+            <p className="text-gray-500 mb-4">请查看你的邮箱</p>
+            <p className="text-sm text-gray-600 mb-4">
+              我们已向 <span className="font-medium text-orange-500">{email}</span> 发送了确认邮件
+            </p>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+            <p className="text-sm text-amber-800">
+              📧 请点击邮箱中的确认链接来完成注册。如果你没有收到邮件，请检查垃圾邮件文件夹。
+            </p>
+          </div>
+          
+          <button
+            onClick={() => setMode('signin')}
+            className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg hover:shadow-xl"
+          >
+            返回登录
+          </button>
+
+          <p className="text-center text-gray-500 text-sm mt-4">
+            已经确认了？
+            <button
+              onClick={() => {
+                setMode('signin');
+                setSuccessMessage(null);
+              }}
+              className="text-orange-500 hover:text-orange-600 font-medium ml-1"
+            >
+              点击登录
+            </button>
+          </p>
         </div>
       </div>
     );
@@ -157,6 +213,13 @@ export default function Auth() {
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-start gap-2">
               <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
               <span>{localError || authError}</span>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-600 text-sm flex items-start gap-2">
+              <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
+              <span>{successMessage}</span>
             </div>
           )}
 

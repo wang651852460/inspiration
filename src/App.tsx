@@ -3,6 +3,7 @@ import Home from "@/pages/Home";
 import Detail from "@/pages/Detail";
 import InspirationForm from "@/components/InspirationForm";
 import Auth from "@/pages/Auth";
+import EmailConfirm from "@/pages/EmailConfirm";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { useSupabaseSync } from "@/hooks/useSupabaseSync";
@@ -41,6 +42,7 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/auth" element={<Auth />} />
+      <Route path="/email-confirm" element={<EmailConfirm />} />
       <Route
         path="/"
         element={
