@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useInspirationStore } from '@/store/useInspirationStore';
 import { Inspiration } from '@/types';
@@ -15,6 +15,11 @@ export function useSupabaseSync() {
   } = useInspirationStore();
 
   const fetchInspirations = async () => {
+    if (!supabase) {
+      setError('Supabase not configured');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     
@@ -48,6 +53,10 @@ export function useSupabaseSync() {
   };
 
   const syncAddInspiration = async (inspiration: Omit<Inspiration, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!supabase) {
+      throw new Error('Supabase not configured. Please set up your .env file.');
+    }
+
     setIsLoading(true);
     setError(null);
     
@@ -91,6 +100,10 @@ export function useSupabaseSync() {
   };
 
   const syncUpdateInspiration = async (id: string, updates: Partial<Inspiration>) => {
+    if (!supabase) {
+      throw new Error('Supabase not configured. Please set up your .env file.');
+    }
+
     setIsLoading(true);
     setError(null);
     
@@ -120,6 +133,10 @@ export function useSupabaseSync() {
   };
 
   const syncDeleteInspiration = async (id: string) => {
+    if (!supabase) {
+      throw new Error('Supabase not configured. Please set up your .env file.');
+    }
+
     setIsLoading(true);
     setError(null);
     

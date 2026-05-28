@@ -5,10 +5,17 @@ import type { User, Session } from '@supabase/supabase-js';
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -30,6 +37,10 @@ export function useAuth() {
   }, []);
 
   const signUp = async (email: string, password: string) => {
+    if (!supabase) {
+      throw new Error('Supabase not configured. Please set up your .env file.');
+    }
+    
     setIsLoading(true);
     setError(null);
     
@@ -51,6 +62,10 @@ export function useAuth() {
   };
 
   const signIn = async (email: string, password: string) => {
+    if (!supabase) {
+      throw new Error('Supabase not configured. Please set up your .env file.');
+    }
+    
     setIsLoading(true);
     setError(null);
     
@@ -72,6 +87,10 @@ export function useAuth() {
   };
 
   const signOut = async () => {
+    if (!supabase) {
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     
