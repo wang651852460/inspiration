@@ -7,6 +7,7 @@ export interface Inspiration {
   color: string;
   createdAt: string;
   updatedAt: string;
+  drawing?: string;
 }
 
 export const COLORS = [

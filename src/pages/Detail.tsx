@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useInspirationStore } from "@/store/useInspirationStore";
-import { X, Edit, Trash2, Tag, Star, Clock } from "lucide-react";
+import { X, Edit, Trash2, Tag, Star, Clock, Pencil } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -14,6 +14,7 @@ export default function Detail() {
   const { getInspirationById, deleteInspiration } = useInspirationStore();
   
   const inspiration = id ? getInspirationById(id) : null;
+  const hasDrawing = inspiration && !!(inspiration as any).drawing;
 
   if (!inspiration) {
     return (
@@ -113,11 +114,27 @@ export default function Detail() {
               </div>
             </div>
 
-            <div className="mb-8">
-              <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap">
-                {inspiration.content}
-              </p>
-            </div>
+            {hasDrawing && (
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-3">
+                  <Pencil size={18} className="text-orange-500" />
+                  <span className="text-sm font-medium text-gray-700">绘画内容</span>
+                </div>
+                <img
+                  src={(inspiration as any).drawing}
+                  alt="Drawing"
+                  className="w-full rounded-xl shadow-md"
+                />
+              </div>
+            )}
+
+            {inspiration.content && (
+              <div className="mb-8">
+                <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap">
+                  {inspiration.content}
+                </p>
+              </div>
+            )}
 
             {inspiration.tags.length > 0 && (
               <div className="border-t border-gray-100 pt-6">

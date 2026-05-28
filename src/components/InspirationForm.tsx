@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useInspirationStore } from "@/store/useInspirationStore";
 import { Inspiration, COLORS } from "@/types";
-import { X, Plus, Check, Trash2, Star } from "lucide-react";
+import { X, Plus, Check, Trash2, Star, Pencil } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import DrawingCanvas from "./DrawingCanvas";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -13,22 +14,25 @@ function cn(...inputs: ClassValue[]) {
 export default function InspirationForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { addInspiration, updateInspiration, getInspirationById, inspirations } = useInspirationStore();
+  const { addInspiration, updateInspiration, getInspirationById } = useInspirationStore();
   
   const isEdit = !!id;
   const existingInspiration = id ? getInspirationById(id) : null;
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [drawingData, setDrawingData] = useState<string>("");
   const [tagsInput, setTagsInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [priority, setPriority] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [color, setColor] = useState(COLORS[0]);
+  const [inputMode, setInputMode] = useState<"text" | "drawing">("text");
 
   useEffect(() => {
     if (existingInspiration) {
       setTitle(existingInspiration.title);
       setContent(existingInspiration.content);
+      setDrawingData((existingInspiration as any).drawing || "");
       setTags(existingInspiration.tags);
       setPriority(existingInspiration.priority);
       setColor(existingInspiration.color);
@@ -58,22 +62,19 @@ export default function InspirationForm() {
     e.preventDefault();
     if (!title.trim()) return;
 
+    const inspirationData: any = {
+      title,
+      content,
+      tags,
+      priority,
+      color,
+      drawing: drawingData,
+    };
+
     if (isEdit && id) {
-      updateInspiration(id, {
-        title,
-        content,
-        tags,
-        priority,
-        color,
-      });
+      updateInspiration(id, inspirationData);
     } else {
-      addInspiration({
-        title,
-        content,
-        tags,
-        priority,
-        color,
-      });
+      addInspiration(inspirationData);
     }
     
     navigate("/");
@@ -115,16 +116,53 @@ export default function InspirationForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                内容
-              </label>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="记录你的想法..."
-                rows={8}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all resize-none"
-              />
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  内容
+                </label>
+                <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setInputMode("text")}
+                    className={cn(
+                      "px-3 py-1 rounded-md text-sm font-medium transition-all",
+                      inputMode === "text"
+                        ? "bg-white text-orange-600 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    )}
+                  >
+                    文字
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInputMode("drawing")}
+                    className={cn(
+                      "px-3 py-1 rounded-md text-sm font-medium transition-all flex items-center gap-1",
+                      inputMode === "drawing"
+                        ? "bg-white text-orange-600 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    )}
+                  >
+                    <Pencil size={14} />
+                    画画
+                  </button>
+                </div>
+              </div>
+
+              {inputMode === "text" ? (
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="记录你的想法..."
+                  rows={8}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all resize-none"
+                />
+              ) : (
+                <DrawingCanvas
+                  initialData={drawingData}
+                  onChange={(data) => setDrawingData(data)}
+                />
+              )}
             </div>
 
             <div>

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Inspiration } from "@/types";
-import { Clock, Tag, Star } from "lucide-react";
+import { Clock, Tag, Star, Pencil } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -14,6 +14,8 @@ interface InspirationCardProps {
 
 export default function InspirationCard({ inspiration }: InspirationCardProps) {
   const navigate = useNavigate();
+  const hasDrawing = !!(inspiration as any).drawing;
+  const hasContent = !!inspiration.content;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -52,6 +54,21 @@ export default function InspirationCard({ inspiration }: InspirationCardProps) {
       />
       
       <div className="p-6">
+        {hasDrawing && (
+          <div className="mb-3 relative rounded-lg overflow-hidden">
+            <img
+              src={(inspiration as any).drawing}
+              alt="Drawing"
+              className="w-full h-32 object-cover rounded-lg"
+              style={{ borderRadius: "0.75rem" }}
+            />
+            <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs flex items-center gap-1">
+              <Pencil size={10} />
+              绘画
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-xl font-bold text-gray-800 line-clamp-1 font-serif">
             {inspiration.title}
@@ -59,9 +76,11 @@ export default function InspirationCard({ inspiration }: InspirationCardProps) {
           {renderPriorityStars(inspiration.priority)}
         </div>
 
-        <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
-          {inspiration.content}
-        </p>
+        {hasContent && (
+          <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
+            {inspiration.content}
+          </p>
+        )}
 
         <div className="flex flex-wrap gap-2 mb-4">
           {inspiration.tags.slice(0, 3).map((tag, idx) => (
