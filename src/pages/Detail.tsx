@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useInspirationStore } from "@/store/useInspirationStore";
+import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { X, Edit, Trash2, Tag, Star, Clock, Pencil } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -11,7 +12,8 @@ function cn(...inputs: ClassValue[]) {
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getInspirationById, deleteInspiration } = useInspirationStore();
+  const { getInspirationById } = useInspirationStore();
+  const { syncDeleteInspiration, isLoading } = useSupabaseSync();
   
   const inspiration = id ? getInspirationById(id) : null;
   const hasDrawing = inspiration && !!(inspiration as any).drawing;
@@ -60,10 +62,14 @@ export default function Detail() {
     );
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm("确定要删除这个灵感吗？")) {
-      deleteInspiration(inspiration.id);
-      navigate("/");
+      try {
+        await syncDeleteInspiration(inspiration.id);
+        navigate("/");
+      } catch (error) {
+        console.error("Failed to delete inspiration:", error);
+      }
     }
   };
 
@@ -87,7 +93,8 @@ export default function Detail() {
             </button>
             <button
               onClick={handleDelete}
-              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+              disabled={isLoading}
+              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
             >
               <Trash2 size={20} />
             </button>

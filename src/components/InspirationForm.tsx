@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useInspirationStore } from "@/store/useInspirationStore";
+import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { Inspiration, COLORS } from "@/types";
-import { X, Plus, Check, Trash2, Star, Pencil } from "lucide-react";
+import { X, Plus, Check, Star, Pencil } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import DrawingCanvas from "./DrawingCanvas";
@@ -14,7 +15,8 @@ function cn(...inputs: ClassValue[]) {
 export default function InspirationForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { addInspiration, updateInspiration, getInspirationById } = useInspirationStore();
+  const { getInspirationById } = useInspirationStore();
+  const { syncAddInspiration, syncUpdateInspiration, isLoading } = useSupabaseSync();
   
   const isEdit = !!id;
   const existingInspiration = id ? getInspirationById(id) : null;
@@ -58,7 +60,7 @@ export default function InspirationForm() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
@@ -71,13 +73,16 @@ export default function InspirationForm() {
       drawing: drawingData,
     };
 
-    if (isEdit && id) {
-      updateInspiration(id, inspirationData);
-    } else {
-      addInspiration(inspirationData);
+    try {
+      if (isEdit && id) {
+        await syncUpdateInspiration(id, inspirationData);
+      } else {
+        await syncAddInspiration(inspirationData);
+      }
+      navigate("/");
+    } catch (error) {
+      console.error("Failed to save inspiration:", error);
     }
-    
-    navigate("/");
   };
 
   return (
@@ -258,11 +263,11 @@ export default function InspirationForm() {
               </button>
               <button
                 type="submit"
-                disabled={!title.trim()}
+                disabled={!title.trim() || isLoading}
                 className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
               >
                 <Check size={20} className="inline mr-2" />
-                保存
+                {isLoading ? '保存中...' : '保存'}
               </button>
             </div>
           </div>

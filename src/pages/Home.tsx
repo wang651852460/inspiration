@@ -1,16 +1,26 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useInspirationStore } from "@/store/useInspirationStore";
+import { useAuth } from "@/hooks/useAuth";
+import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import InspirationCard from "@/components/InspirationCard";
-import { Plus, Search, Filter, Sparkles } from "lucide-react";
+import { Plus, Search, Filter, Sparkles, LogOut, User } from "lucide-react";
 
 export default function Home() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const { inspirations, searchInspirations, getAllTags } = useInspirationStore();
+  const { fetchInspirations, syncDeleteInspiration, isLoading } = useSupabaseSync();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const allTags = getAllTags();
+
+  useEffect(() => {
+    if (user) {
+      fetchInspirations();
+    }
+  }, [user]);
 
   const filteredInspirations = useMemo(() => {
     let result = inspirations;
@@ -50,13 +60,29 @@ export default function Home() {
             </p>
           </div>
           
-          <button
-            onClick={() => navigate("/create")}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-2xl shadow-lg hover:shadow-xl hover:from-orange-600 hover:to-amber-600 transition-all transform hover:-translate-y-0.5"
-          >
-            <Plus size={20} />
-            捕捉灵感
-          </button>
+          <div className="flex items-center gap-3">
+            {user && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm">
+                <User size={18} className="text-gray-600" />
+                <span className="text-sm text-gray-700">{user.email}</span>
+                <button
+                  onClick={() => signOut()}
+                  className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                  title="退出登录"
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
+            )}
+            
+            <button
+              onClick={() => navigate("/create")}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-2xl shadow-lg hover:shadow-xl hover:from-orange-600 hover:to-amber-600 transition-all transform hover:-translate-y-0.5"
+            >
+              <Plus size={20} />
+              捕捉灵感
+            </button>
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
@@ -93,7 +119,12 @@ export default function Home() {
           </div>
         </div>
 
-        {filteredInspirations.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-20">
+            <div className="inline-block w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-600">同步数据中...</p>
+          </div>
+        ) : filteredInspirations.length === 0 ? (
           <div className="text-center py-20">
             <div className="inline-flex items-center justify-center w-24 h-24 bg-orange-100 rounded-full mb-6">
               <Sparkles size={48} className="text-orange-400" />
