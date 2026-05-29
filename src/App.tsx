@@ -29,6 +29,27 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-600">加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function AppContent() {
   const { user } = useAuth();
   const { fetchInspirations } = useSupabaseSync();
@@ -41,7 +62,11 @@ function AppContent() {
 
   return (
     <Routes>
-      <Route path="/auth" element={<Auth />} />
+      <Route path="/auth" element={
+        <PublicRoute>
+          <Auth />
+        </PublicRoute>
+      } />
       <Route path="/email-confirm" element={<EmailConfirm />} />
       <Route
         path="/"
