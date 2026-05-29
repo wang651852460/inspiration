@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
 import { LogIn, UserPlus, LogOut, User, AlertCircle } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -21,13 +22,19 @@ export default function Auth() {
   const { user, isLoading, error: authError, signIn, signUp, signOut } = useAuth();
   const navigate = useNavigate();
 
-  // Check URL params for email confirmation redirect
   useEffect(() => {
     const confirmed = searchParams.get('confirmed');
     if (confirmed === 'true') {
       setSuccessMessage('邮箱确认成功！请登录你的账号。');
     }
   }, [searchParams]);
+
+  // Auto-redirect if already logged in (not during sign-in flow)
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +55,16 @@ export default function Auth() {
     try {
       if (mode === 'signin') {
         await signIn(email, password);
-        navigate('/');
+        // Wait for Supabase session to be established
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            navigate('/', { replace: true });
+            return;
+          }
+        }
+        // Fallback: navigate anyway
+        navigate('/', { replace: true });
       } else {
         await signUp(email, password);
         setSuccessMessage('注册成功！请查看邮箱并点击确认链接来完成注册。');
@@ -58,6 +74,32 @@ export default function Auth() {
       setLocalError(err.message || '操作失败');
     }
   };
+
+  if (user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-orange-100 rounded-full mb-4">
+              <User size={40} className="text-orange-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">已登录</h2>
+            <p className="text-gray-500">{user.email}</p>
+            <p className="text-gray-400 text-sm mt-2">正在跳转至首页...</p>
+          </div>
+          
+          <button
+            onClick={() => signOut()}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
+          >
+            <LogOut size={20} />
+            {isLoading ? '退出中...' : '退出登录'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (mode === 'email-confirmed') {
     return (
