@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LogIn, UserPlus, LogOut, User, AlertCircle } from 'lucide-react';
@@ -20,6 +20,11 @@ export default function Auth() {
   
   const { user, isLoading, error: authError, signIn, signUp, signOut } = useAuth();
   const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+
+  useEffect(() => {
+    navigateRef.current = navigate;
+  }, [navigate]);
 
   useEffect(() => {
     const confirmed = searchParams.get('confirmed');
@@ -27,6 +32,12 @@ export default function Auth() {
       setSuccessMessage('邮箱确认成功！请登录你的账号。');
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (user && mode === 'signin' && !isLoading) {
+      navigateRef.current('/');
+    }
+  }, [user, mode, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +58,6 @@ export default function Auth() {
     try {
       if (mode === 'signin') {
         await signIn(email, password);
-        navigate('/');
       } else {
         await signUp(email, password);
         setSuccessMessage('注册成功！请查看邮箱并点击确认链接来完成注册。');
