@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LogIn, UserPlus, LogOut, User, AlertCircle } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, User, AlertCircle, Check } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -16,15 +16,11 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
   const [searchParams] = useSearchParams();
   
   const { user, isLoading, error: authError, signIn, signUp, signOut } = useAuth();
   const navigate = useNavigate();
-  const navigateRef = useRef(navigate);
-
-  useEffect(() => {
-    navigateRef.current = navigate;
-  }, [navigate]);
 
   useEffect(() => {
     const confirmed = searchParams.get('confirmed');
@@ -34,10 +30,10 @@ export default function Auth() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (user && mode === 'signin' && !isLoading) {
-      navigateRef.current('/');
+    if (user && isSigningIn && !isLoading) {
+      navigate('/');
     }
-  }, [user, mode, isLoading]);
+  }, [user, isSigningIn, isLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +53,7 @@ export default function Auth() {
 
     try {
       if (mode === 'signin') {
+        setIsSigningIn(true);
         await signIn(email, password);
       } else {
         await signUp(email, password);
@@ -65,6 +62,7 @@ export default function Auth() {
       }
     } catch (err: any) {
       setLocalError(err.message || '操作失败');
+      setIsSigningIn(false);
     }
   };
 
