@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LogIn, UserPlus, LogOut, User, AlertCircle, Check } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, User, AlertCircle } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -16,12 +16,13 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [searchParams] = useSearchParams();
   
   const { user, isLoading, error: authError, signIn, signUp, signOut } = useAuth();
   const navigate = useNavigate();
 
+  // Check URL params for email confirmation redirect
   useEffect(() => {
     const confirmed = searchParams.get('confirmed');
     if (confirmed === 'true') {
@@ -29,13 +30,15 @@ export default function Auth() {
     }
   }, [searchParams]);
 
+  // Navigate to home when user becomes available AND we were just signing in
   useEffect(() => {
-    if (user && isSigningIn && !isLoading) {
+    if (user && !isLoading && isProcessing) {
+      setIsProcessing(false);
       navigate('/');
     }
-  }, [user, isSigningIn, isLoading, navigate]);
+  }, [user, isLoading, isProcessing, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
     setSuccessMessage(null);
@@ -53,8 +56,9 @@ export default function Auth() {
 
     try {
       if (mode === 'signin') {
-        setIsSigningIn(true);
+        setIsProcessing(true);
         await signIn(email, password);
+        // Navigation will happen in useEffect when user state updates
       } else {
         await signUp(email, password);
         setSuccessMessage('注册成功！请查看邮箱并点击确认链接来完成注册。');
@@ -62,11 +66,12 @@ export default function Auth() {
       }
     } catch (err: any) {
       setLocalError(err.message || '操作失败');
-      setIsSigningIn(false);
+      setIsProcessing(false);
     }
-  };
+  }, [mode, email, password, confirmPassword, signIn, signUp]);
 
-  if (user) {
+  // If already logged in and not in the middle of signing in, show logged-in state
+  if (user && !isProcessing) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
@@ -234,10 +239,10 @@ export default function Auth() {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isProcessing}
             className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-50 shadow-lg hover:shadow-xl"
           >
-            {isLoading ? '处理中...' : mode === 'signin' ? '登录' : '注册'}
+            {(isLoading || isProcessing) ? '处理中...' : mode === 'signin' ? '登录' : '注册'}
           </button>
         </form>
 
