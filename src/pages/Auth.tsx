@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LogIn, UserPlus, LogOut, User, AlertCircle } from 'lucide-react';
@@ -16,11 +16,13 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [searchParams] = useSearchParams();
   
   const { user, isLoading, error: authError, signIn, signUp, signOut } = useAuth();
   const navigate = useNavigate();
+  
+  // Use a ref to track sign-in intent (won't cause re-renders, won't be blocked by early return)
+  const isSigningInRef = useRef(false);
 
   // Check URL params for email confirmation redirect
   useEffect(() => {
@@ -32,11 +34,11 @@ export default function Auth() {
 
   // Navigate to home when user becomes available AND we were just signing in
   useEffect(() => {
-    if (user && !isLoading && isProcessing) {
-      setIsProcessing(false);
+    if (user && isSigningInRef.current) {
+      isSigningInRef.current = false;
       navigate('/');
     }
-  }, [user, isLoading, isProcessing, navigate]);
+  }, [user, navigate]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +58,7 @@ export default function Auth() {
 
     try {
       if (mode === 'signin') {
-        setIsProcessing(true);
+        isSigningInRef.current = true;
         await signIn(email, password);
         // Navigation will happen in useEffect when user state updates
       } else {
@@ -66,12 +68,12 @@ export default function Auth() {
       }
     } catch (err: any) {
       setLocalError(err.message || '操作失败');
-      setIsProcessing(false);
+      isSigningInRef.current = false;
     }
   }, [mode, email, password, confirmPassword, signIn, signUp]);
 
   // If already logged in and not in the middle of signing in, show logged-in state
-  if (user && !isProcessing) {
+  if (user && !isSigningInRef.current) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
@@ -239,10 +241,10 @@ export default function Auth() {
 
           <button
             type="submit"
-            disabled={isLoading || isProcessing}
+            disabled={isLoading}
             className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-50 shadow-lg hover:shadow-xl"
           >
-            {(isLoading || isProcessing) ? '处理中...' : mode === 'signin' ? '登录' : '注册'}
+            {isLoading ? '处理中...' : mode === 'signin' ? '登录' : '注册'}
           </button>
         </form>
 
