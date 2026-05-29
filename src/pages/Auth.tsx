@@ -47,6 +47,7 @@ export default function Auth() {
     try {
       if (mode === 'signin') {
         await signIn(email, password);
+        navigate('/');
       } else {
         await signUp(email, password);
         setSuccessMessage('注册成功！请查看邮箱并点击确认链接来完成注册。');
